@@ -434,20 +434,21 @@ function versioninfo(io::IO=stdout)
 end
 
 function __init__()
-    try
-        BLAS.check()
-        if BLAS.vendor() === :mkl
-            ccall((:MKL_Set_Interface_Layer, Base.libblas_name), Cvoid, (Cint,), USE_BLAS64 ? 1 : 0)
-        end
-        Threads.resize_nthreads!(Abuf)
-        Threads.resize_nthreads!(Bbuf)
-        Threads.resize_nthreads!(Cbuf)
-    catch ex
-        Base.showerror_nostdio(ex,
-            "WARNING: Error during initialization of module LinearAlgebra")
-    end
-    # register a hook to disable BLAS threading
-    Base.at_disable_library_threading(() -> BLAS.set_num_threads(1))
+     try
+        ccall((:set_blas_funcs, "libblastrampoline"), Cvoid, (Cstring,), "/home/viralbshah/julia/usr/lib/libopenblas64_.so")
+# 	BLAS.check()
+#         if BLAS.vendor() === :mkl
+#             ccall((:MKL_Set_Interface_Layer, Base.libblas_name), Cvoid, (Cint,), USE_BLAS64 ? 1 : 0)
+#         end
+#         Threads.resize_nthreads!(Abuf)
+#         Threads.resize_nthreads!(Bbuf)
+#         Threads.resize_nthreads!(Cbuf)
+     catch ex
+         Base.showerror_nostdio(ex,
+             "WARNING: Error during initialization of module LinearAlgebra")
+     end
+     # register a hook to disable BLAS threading
+     Base.at_disable_library_threading(() -> BLAS.set_num_threads(1))
 end
 
 end # module LinearAlgebra

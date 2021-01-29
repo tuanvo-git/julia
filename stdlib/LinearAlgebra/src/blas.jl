@@ -94,7 +94,7 @@ end
 const _vendor = determine_vendor()
 vendor() = _vendor
 
-if vendor() === :openblas64
+if USE_BLAS64
     macro blasfunc(x)
         return Expr(:quote, Symbol(x, "64_"))
     end

@@ -24,7 +24,7 @@ BUILDDIR := $(BUILDDIR)$(MAYBE_HOST)
 # if you are adding a new target, it can help to copy an similar, existing target
 #
 # autoconf configure-driven scripts: pcre unwind gmp mpfr patchelf libuv curl
-# custom Makefile rules: openlibm dsfmt suitesparse-wrapper suitesparse lapack openblas utf8proc objconv osxunwind libwhich
+# custom Makefile rules: openlibm dsfmt suitesparse-wrapper suitesparse lapack libblastrampoline openblas utf8proc objconv osxunwind libwhich
 # CMake libs: llvm libgit2 libssh2 mbedtls
 #
 # downloadable via git: llvm-svn, libuv, libopenlibm, utf8proc, libgit2, libssh2
@@ -94,7 +94,7 @@ DEP_LIBS += pcre
 endif
 
 ifeq ($(USE_SYSTEM_BLAS), 0)
-DEP_LIBS += openblas
+DEP_LIBS += libblastrampoline openblas
 ifeq ($(USE_BLAS64), 1)
 ifeq ($(OS), Darwin)
 DEP_LIBS += objconv
@@ -187,7 +187,7 @@ install: $(addprefix install-, $(DEP_LIBS))
 cleanall: $(addprefix clean-, $(DEP_LIBS))
 distcleanall: $(addprefix distclean-, $(DEP_LIBS))
 	rm -rf $(build_prefix)
-getall: get-llvm get-libuv get-pcre get-openlibm get-dsfmt get-openblas get-lapack get-suitesparse get-unwind get-gmp get-mpfr get-patchelf get-utf8proc get-objconv get-mbedtls get-libssh2 get-nghttp2 get-curl get-libgit2 get-libwhich get-zlib get-p7zip get-csl
+getall: get-llvm get-libuv get-pcre get-openlibm get-dsfmt get-libblastrampoline get-openblas get-lapack get-suitesparse get-unwind get-gmp get-mpfr get-patchelf get-utf8proc get-objconv get-mbedtls get-libssh2 get-nghttp2 get-curl get-libgit2 get-libwhich get-zlib get-p7zip get-csl
 
 # If we're building for MacOS, no matter what, `getall` should include `osxunwind`
 ifeq ($(OS),Darwin)
@@ -206,7 +206,8 @@ include $(SRCDIR)/pcre.mk
 include $(SRCDIR)/openlibm.mk
 include $(SRCDIR)/dsfmt.mk
 include $(SRCDIR)/objconv.mk
-include $(SRCDIR)/blas.mk
+include $(SRCDIR)/libblastrampoline.mk
+include $(SRCDIR)/openblas.mk
 include $(SRCDIR)/utf8proc.mk
 include $(SRCDIR)/suitesparse.mk
 include $(SRCDIR)/unwind.mk
