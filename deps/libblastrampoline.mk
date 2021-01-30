@@ -29,7 +29,7 @@ clean-libblastrampoline:
 	-rm $(BUILDDIR)/$(LIBBLASTRAMPOLINE_SRC_DIR)/libblastrampoline.$(SHLIB_EXT)
 
 uninstall-libblastrampoline:
-	-rm $(build_prefix)/manifest/libblastrampoline 
+	-rm $(build_prefix)/manifest/libblastrampoline
 	-rm $(build_shlibdir)/libblastrampoline.$(SHLIB_EXT)
 
 get-libblastrampoline: $(LIBBLASTRAMPOLINE_SRC_FILE)
