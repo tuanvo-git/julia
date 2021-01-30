@@ -917,18 +917,20 @@ MCPU:=apple-a12
 endif
 endif
 
-# Renaming OpenBLAS symbols, see #4923 and #8734
+# Renaming BLAS symbols, see #4923 and #8734
 ifeq ($(USE_SYSTEM_BLAS), 0)
 ifeq ($(BINARY), 64)
 USE_BLAS64 := 1
 OPENBLAS_SYMBOLSUFFIX := 64_
 OPENBLAS_LIBNAMESUFFIX := 64_
-LIBBLAS := -L$(build_shlibdir) -lopenblas$(OPENBLAS_LIBNAMESUFFIX)
+endif
+endif
+
+LIBBLAS := -L$(build_shlibdir) -lblastrampoline
 LIBLAPACK := $(LIBBLAS)
-LIBBLASNAME := $(LIBBLASNAME)$(OPENBLAS_LIBNAMESUFFIX)
+LIBBLASNAME := libblastrampoline
 LIBLAPACKNAME := $(LIBBLASNAME)
-endif
-endif
+
 
 # Set MARCH-specific flags
 ifneq ($(MARCH),)

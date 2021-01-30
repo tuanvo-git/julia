@@ -6,7 +6,7 @@ Interface to BLAS subroutines.
 module BLAS
 
 import ..axpy!, ..axpby!
-import Base: copyto!
+import Base: copyto!, USE_BLAS64
 using Base: require_one_based_indexing
 
 export
