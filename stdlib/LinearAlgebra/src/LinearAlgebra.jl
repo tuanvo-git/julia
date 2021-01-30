@@ -18,7 +18,6 @@ import Base: USE_BLAS64, abs, acos, acosh, acot, acoth, acsc, acsch, adjoint, as
 using Base: hvcat_fill, IndexLinear, promote_op, promote_typeof,
     @propagate_inbounds, @pure, reduce, typed_vcat, require_one_based_indexing
 using Base.Broadcast: Broadcasted, broadcasted
-using OpenBLAS_jll
 
 export
 # Modules
@@ -436,7 +435,15 @@ end
 
 function __init__()
      try
-        ccall((:set_blas_funcs, "libblastrampoline"), Cvoid, (Cstring,), OpenBLAS_jll.libopenblas_path)
+        shlib_ext = if Sys.iswindows()
+            ".dll"
+        elseif Sys.isapple()
+            ".dylib"
+        else
+            ".so"
+        end
+        libopenblas_path = joinpath(Sys.BINDIR, Base.LIBDIR, string("libopenblas", USE_BLAS64 ? "64_" : "", shlib_ext))
+        ccall((:set_blas_funcs, "libblastrampoline"), Cvoid, (Cstring,), libopenblas_path)
 # 	BLAS.check()
 #         if BLAS.vendor() === :mkl
 #             ccall((:MKL_Set_Interface_Layer, Base.libblas_name), Cvoid, (Cint,), USE_BLAS64 ? 1 : 0)
