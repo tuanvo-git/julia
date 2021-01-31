@@ -433,17 +433,27 @@ function versioninfo(io::IO=stdout)
     println(io, "LAPACK: ",Base.liblapack_name)
 end
 
+function get_openblas_path()
+    shlib_ext = if Sys.iswindows()
+         ".dll"
+    elseif Sys.isapple()
+         ".dylib"
+    else
+         ".so"
+    end
+    libopenblas_path = joinpath(Sys.BINDIR, Base.LIBDIR, "julia", string("libopenblas", USE_BLAS64 ? "64_" : "", shlib_ext))
+    if !isfile(libopenblas_path)
+        libopenblas_path = joinpath(Sys.BINDIR, Base.LIBDIR, string("libopenblas", USE_BLAS64 ? "64_" : "", shlib_ext))
+        if !isfile(libopenblas_path)
+            error("Cannot find BLAS at ", libopenblas_path)
+        end
+    end
+    return libopenblas_path
+end
+
 function __init__()
      try
-        shlib_ext = if Sys.iswindows()
-            ".dll"
-        elseif Sys.isapple()
-            ".dylib"
-        else
-            ".so"
-        end
-        libopenblas_path = joinpath(Sys.BINDIR, Base.LIBDIR, string("libopenblas", USE_BLAS64 ? "64_" : "", shlib_ext))
-        ccall((:set_blas_funcs, "libblastrampoline"), Cvoid, (Cstring,), libopenblas_path)
+          ccall((:set_blas_funcs, "libblastrampoline"), Cvoid, (Cstring,), get_openblas_path())
 # 	BLAS.check()
 #         if BLAS.vendor() === :mkl
 #             ccall((:MKL_Set_Interface_Layer, Base.libblas_name), Cvoid, (Cint,), USE_BLAS64 ? 1 : 0)
