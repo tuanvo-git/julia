@@ -118,14 +118,15 @@ end
 const NamedTuple_typename = NamedTuple.body.body.name
 
 function _fieldnames(@nospecialize t)
-    if t.name === NamedTuple_typename
-        if t.parameters[1] isa Tuple
-            return t.parameters[1]
+    if getfield(t, :name) === NamedTuple_typename
+        p = getfield(t, :parameters)[1]
+        if p isa Tuple
+            return p
         else
             throw(ArgumentError("type does not have definite field names"))
         end
     end
-    isdefined(t, :names) ? t.names : t.name.names
+    isdefined(t, :names) ? getfield(t, :names) : getfield(t, :name).names
 end
 
 """
@@ -150,7 +151,7 @@ function fieldname(t::DataType, i::Integer)
     end
     throw_need_pos_int(i) = throw(ArgumentError("Field numbers must be positive integers. $i is invalid."))
 
-    t.abstract && throw_not_def_field()
+    getfield(t, :abstract) && throw_not_def_field()
     names = _fieldnames(t)
     n_fields = length(names)::Int
     i > n_fields && throw_field_access(t, i, n_fields)
@@ -211,7 +212,7 @@ julia> nameof(Foo.S{T} where T)
 :S
 ```
 """
-nameof(t::DataType) = t.name.name
+nameof(t::DataType) = getfield(t, :name).name
 nameof(t::UnionAll) = nameof(unwrap_unionall(t))::Symbol
 
 """
@@ -233,7 +234,7 @@ julia> parentmodule(Foo.Int)
 Foo
 ```
 """
-parentmodule(t::DataType) = t.name.module
+parentmodule(t::DataType) = getfield(t, :name).module
 parentmodule(t::UnionAll) = parentmodule(unwrap_unionall(t))
 
 """
@@ -312,8 +313,8 @@ Can be called on any `isconcretetype`.
 """
 function datatype_alignment(dt::DataType)
     @_pure_meta
-    dt.layout == C_NULL && throw(UndefRefError())
-    alignment = unsafe_load(convert(Ptr{DataTypeLayout}, dt.layout)).alignment
+    getfield(dt, :layout) == C_NULL && throw(UndefRefError())
+    alignment = unsafe_load(convert(Ptr{DataTypeLayout}, getfield(dt, :layout))).alignment
     return Int(alignment)
 end
 
@@ -350,8 +351,8 @@ Can be called on any `isconcretetype`.
 """
 function datatype_haspadding(dt::DataType)
     @_pure_meta
-    dt.layout == C_NULL && throw(UndefRefError())
-    flags = unsafe_load(convert(Ptr{DataTypeLayout}, dt.layout)).flags
+    getfield(dt, :layout) == C_NULL && throw(UndefRefError())
+    flags = unsafe_load(convert(Ptr{DataTypeLayout}, getfield(dt, :layout))).flags
     return flags & 1 == 1
 end
 
@@ -363,8 +364,8 @@ Can be called on any `isconcretetype`.
 """
 function datatype_nfields(dt::DataType)
     @_pure_meta
-    dt.layout == C_NULL && throw(UndefRefError())
-    return unsafe_load(convert(Ptr{DataTypeLayout}, dt.layout)).nfields
+    getfield(dt, :layout) == C_NULL && throw(UndefRefError())
+    return unsafe_load(convert(Ptr{DataTypeLayout}, getfield(dt, :layout))).nfields
 end
 
 """
@@ -375,8 +376,8 @@ Can be called on any `isconcretetype`.
 """
 function datatype_pointerfree(dt::DataType)
     @_pure_meta
-    dt.layout == C_NULL && throw(UndefRefError())
-    npointers = unsafe_load(convert(Ptr{DataTypeLayout}, dt.layout)).npointers
+    getfield(dt, :layout) == C_NULL && throw(UndefRefError())
+    npointers = unsafe_load(convert(Ptr{DataTypeLayout}, getfield(dt, :layout))).npointers
     return npointers == 0
 end
 
@@ -391,8 +392,8 @@ See also [`fieldoffset`](@ref).
 """
 function datatype_fielddesc_type(dt::DataType)
     @_pure_meta
-    dt.layout == C_NULL && throw(UndefRefError())
-    flags = unsafe_load(convert(Ptr{DataTypeLayout}, dt.layout)).flags
+    getfield(dt, :layout) == C_NULL && throw(UndefRefError())
+    flags = unsafe_load(convert(Ptr{DataTypeLayout}, getfield(dt, :layout))).flags
     return (flags >> 1) & 3
 end
 
@@ -415,13 +416,13 @@ FieldDesc(fd::FieldDescStorage{T}) where {T} =
 struct DataTypeFieldDesc
     dt::DataType
     function DataTypeFieldDesc(dt::DataType)
-        dt.layout == C_NULL && throw(UndefRefError())
+        getfield(dt, :layout) == C_NULL && throw(UndefRefError())
         new(dt)
     end
 end
 
 function getindex(dtfd::DataTypeFieldDesc, i::Int)
-    layout_ptr = convert(Ptr{DataTypeLayout}, dtfd.dt.layout)
+    layout_ptr = convert(Ptr{DataTypeLayout}, getfield(dtfd.dt, :layout))
     fd_ptr = layout_ptr + sizeof(DataTypeLayout)
     layout = unsafe_load(layout_ptr)
     fielddesc_type = (layout.flags >> 1) & 3
@@ -458,7 +459,7 @@ true
 !!! compat "Julia 1.5"
     This function requires at least Julia 1.5.
 """
-ismutable(@nospecialize(x)) = (@_pure_meta; typeof(x).mutable)
+ismutable(@nospecialize(x)) = (@_pure_meta; getfield(typeof(x), :mutable))
 
 
 """
@@ -473,7 +474,7 @@ Determine whether type `T` was declared as a mutable type
 function ismutabletype(@nospecialize(t::Type))
     t = unwrap_unionall(t)
     # TODO: what to do for `Union`?
-    return isa(t, DataType) && t.mutable
+    return isa(t, DataType) && getfield(t, :mutable)
 end
 
 
@@ -488,8 +489,8 @@ function isstructtype(@nospecialize(t::Type))
     t = unwrap_unionall(t)
     # TODO: what to do for `Union`?
     isa(t, DataType) || return false
-    hasfield = !isdefined(t, :types) || !isempty(t.types)
-    return hasfield || (t.size == 0 && !t.abstract)
+    hasfield = !isdefined(t, :types) || !isempty(getfield(t, :types))
+    return hasfield || (getfield(t, :size) == 0 && !getfield(t, :abstract))
 end
 
 """
@@ -503,8 +504,8 @@ function isprimitivetype(@nospecialize(t::Type))
     t = unwrap_unionall(t)
     # TODO: what to do for `Union`?
     isa(t, DataType) || return false
-    hasfield = !isdefined(t, :types) || !isempty(t.types)
-    return !hasfield && t.size != 0 && !t.abstract
+    hasfield = !isdefined(t, :types) || !isempty(getfield(t, :types))
+    return !hasfield && getfield(t, :size) != 0 && !getfield(t, :abstract)
 end
 
 """
@@ -528,14 +529,14 @@ julia> isbitstype(Complex)
 false
 ```
 """
-isbitstype(@nospecialize(t::Type)) = (@_pure_meta; isa(t, DataType) && t.isbitstype)
+isbitstype(@nospecialize(t::Type)) = (@_pure_meta; isa(t, DataType) && getfield(t, :isbitstype))
 
 """
     isbits(x)
 
 Return `true` if `x` is an instance of an `isbitstype` type.
 """
-isbits(@nospecialize x) = (@_pure_meta; typeof(x).isbitstype)
+isbits(@nospecialize x) = (@_pure_meta; getfield(typeof(x), :isbitstype))
 
 """
     isdispatchtuple(T)
@@ -544,7 +545,7 @@ Determine whether type `T` is a tuple "leaf type",
 meaning it could appear as a type signature in dispatch
 and has no subtypes (or supertypes) which could appear in a call.
 """
-isdispatchtuple(@nospecialize(t)) = (@_pure_meta; isa(t, DataType) && t.isdispatchtuple)
+isdispatchtuple(@nospecialize(t)) = (@_pure_meta; isa(t, DataType) && getfield(t, :isdispatchtuple))
 
 iskindtype(@nospecialize t) = (t === DataType || t === UnionAll || t === Union || t === typeof(Bottom))
 isconcretedispatch(@nospecialize t) = isconcretetype(t) && !iskindtype(t)
@@ -555,7 +556,7 @@ has_free_typevars(@nospecialize(t)) = ccall(:jl_has_free_typevars, Cint, (Any,),
 const _TYPE_NAME = Type.body.name
 function isdispatchelem(@nospecialize v)
     return (v === Bottom) || (v === typeof(Bottom)) || isconcretedispatch(v) ||
-        (isa(v, DataType) && v.name === _TYPE_NAME && !has_free_typevars(v)) # isType(v)
+        (isa(v, DataType) && getfield(v, :name) === _TYPE_NAME && !has_free_typevars(v)) # isType(v)
 end
 
 """
@@ -585,7 +586,7 @@ julia> isconcretetype(Union{Int,String})
 false
 ```
 """
-isconcretetype(@nospecialize(t)) = (@_pure_meta; isa(t, DataType) && t.isconcretetype)
+isconcretetype(@nospecialize(t)) = (@_pure_meta; isa(t, DataType) && getfield(t, :isconcretetype))
 
 """
     isabstracttype(T)
@@ -606,7 +607,7 @@ function isabstracttype(@nospecialize(t))
     @_pure_meta
     t = unwrap_unionall(t)
     # TODO: what to do for `Union`?
-    return isa(t, DataType) && t.abstract
+    return isa(t, DataType) && getfield(t, :abstract)
 end
 
 """
@@ -730,8 +731,8 @@ function fieldcount(@nospecialize t)
     if !(t isa DataType)
         throw(TypeError(:fieldcount, DataType, t))
     end
-    if t.name === NamedTuple_typename
-        names, types = t.parameters
+    if getfield(t, :name) === NamedTuple_typename
+        names, types = getfield(t, :parameters)
         if names isa Tuple
             return length(names)
         end
@@ -740,15 +741,15 @@ function fieldcount(@nospecialize t)
         end
         abstr = true
     else
-        abstr = t.abstract || (t.name === Tuple.name && isvatuple(t))
+        abstr = getfield(t, :abstract) || (getfield(t, :name) === getfield(Tuple, :name) && isvatuple(t))
     end
     if abstr
         throw(ArgumentError("type does not have a definite number of fields"))
     end
     if isdefined(t, :types)
-        return length(t.types)
+        return length(getfield(t, :types))
     end
-    return length(t.name.names)
+    return length(getfield(t, :name).names)
 end
 
 """
