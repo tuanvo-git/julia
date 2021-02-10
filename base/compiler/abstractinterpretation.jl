@@ -1184,7 +1184,7 @@ function abstract_eval_statement(interp::AbstractInterpreter, @nospecialize(e), 
         argtypes = Vector{Any}(undef, n)
         @inbounds for i = 1:n
             ai = abstract_eval_value(interp, ea[i], vtypes, sv)
-            if bail_out_statement(interp, ai, sv)
+            if ai === Bottom
                 return Bottom
             end
             argtypes[i] = ai
@@ -1363,7 +1363,7 @@ function typeinf_local(interp::AbstractInterpreter, frame::InferenceState)
                 if condt === Bottom
                     empty!(frame.pclimitations)
                 end
-                if bail_out_local(interp, condt, frame)
+                if condt === Bottom
                     break
                 end
                 condval = maybe_extract_const_bool(condt)
@@ -1455,7 +1455,7 @@ function typeinf_local(interp::AbstractInterpreter, frame::InferenceState)
             else
                 if hd === :(=)
                     t = abstract_eval_statement(interp, stmt.args[2], changes, frame)
-                    if bail_out_local(interp, t, frame)
+                    if t === Bottom
                         break
                     end
                     frame.src.ssavaluetypes[pc] = t
@@ -1472,7 +1472,7 @@ function typeinf_local(interp::AbstractInterpreter, frame::InferenceState)
                     # these do not generate code
                 else
                     t = abstract_eval_statement(interp, stmt, changes, frame)
-                    if bail_out_local(interp, t, frame)
+                    if t === Bottom
                         break
                     end
                     if !isempty(frame.ssavalue_uses[pc])
